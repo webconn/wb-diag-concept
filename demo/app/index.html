@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html ng-app="diagUiDemoApp">
+  <head>
+    <title>Wiren Board Diag UI Demo</title>
+
+    <meta charset="utf-8" />
+
+    <link rel="stylesheet" type="text/css" href="../node_modules/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="../node_modules/angular-bootstrap-grid-tree/src/treeGrid.css" />
+    <link rel="stylesheet" type="text/css" href="app.css" />
+  </head>
+  <body ng-controller='diagUiController'>
+
+    <div class="container">
+      <h1>Wiren Board Diag UI Demo</h1>
+      <tree-grid tree-data="tree_data" col-defs="col_defs"></tree-grid>
+    </div>
+
+    <script src="../node_modules/angular/angular.min.js"></script>
+    <script src="../node_modules/angular-bootstrap-grid-tree/src/tree-grid-directive.js"></script>
+    <script src="app.module.js"></script>
+  </body>
+</html>
