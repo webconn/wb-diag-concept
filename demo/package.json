@@ -1,0 +1,16 @@
+{
+  "name": "wb-diag-demo",
+  "version": "1.0.0",
+  "description": "Wiren Board Diagnostics UI demo",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "angular-bootstrap-grid-tree": "^0.4.0",
+    "bootstrap": "^4.5.2",
+    "jquery": "^3.5.1",
+    "popper.js": "^1.16.1"
+  }
+}
