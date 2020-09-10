@@ -1,70 +1,70 @@
 var app = angular.module('diagUiDemoApp', ['treeGrid']);
 
+var rawData = [
+  {
+    "path": "/daemons/wb-mqtt-serial/status",
+    "status": "ok",
+    "message": "daemon is working (pid 3458)",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/daemons/wb-rules/status",
+    "status": "ok",
+    "message": "daemon is working (pid 3571)",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus1/device1/rate",
+    "status": "ok",
+    "message": "actual 38 Hz, required 40 Hz",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus1/device1/status",
+    "status": "ok",
+    "message": "device is online",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus1/device2/rate",
+    "status": "warn",
+    "message": "actual 32 Hz, required 40 Hz",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus1/device2/status",
+    "status": "ok",
+    "message": "device is online",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus1/device3/status",
+    "status": "error",
+    "message": "device is offline",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus2/device1/rate",
+    "status": "ok",
+    "message": "actual 40 Hz, required 40 Hz",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/wb-mqtt-serial/bus2/device1/status",
+    "status": "ok",
+    "message": "device is online",
+    "timestamp": 1599723978,
+  },
+  {
+    "path": "/rules/heater/status",
+    "status": "ok",
+    "message": "heater health is OK",
+    "timestamp": 1599723978,
+  }
+];
+
 app.controller('diagUiController', function($scope, $timeout) {
   var tree;
-
-  var rawData = [
-    {
-      "path": "/daemons/wb-mqtt-serial/status",
-      "status": "ok",
-      "message": "daemon is working (pid 3458)",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/daemons/wb-rules/status",
-      "status": "ok",
-      "message": "daemon is working (pid 3571)",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus1/device1/rate",
-      "status": "ok",
-      "message": "actual 38 Hz, required 40 Hz",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus1/device1/status",
-      "status": "ok",
-      "message": "device is online",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus1/device2/rate",
-      "status": "warn",
-      "message": "actual 32 Hz, required 40 Hz",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus1/device2/status",
-      "status": "ok",
-      "message": "device is online",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus1/device3/status",
-      "status": "error",
-      "message": "device is offline",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus2/device1/rate",
-      "status": "ok",
-      "message": "actual 40 Hz, required 40 Hz",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/wb-mqtt-serial/bus2/device1/status",
-      "status": "ok",
-      "message": "device is online",
-      "timestamp": 1599723978,
-    },
-    {
-      "path": "/rules/heater/status",
-      "status": "ok",
-      "message": "heater health is OK",
-      "timestamp": 1599723978,
-    }
-  ];
 
   function makeTree(log) {
     function makeEntry(level) {
@@ -194,60 +194,6 @@ app.controller('diagUiController', function($scope, $timeout) {
 
   var logTreeData = makeTree(rawData);
 
-
-
-  var treeData = [
-    {
-      "id": 1,
-      "subsystem": "Serial driver",
-      "description": "Serial port driver",
-      "status": "WARN",
-      "classes": "btn-warning",
-
-      "children": [
-        {
-          "id": 2,
-          "subsystem": "Bus 1",
-          "description": "First bus",
-          "status": "WARN",
-          
-      "classes": "btn-warning",
-
-          "children": [],
-          "level": 2,
-          "selected": false
-        },
-        {
-          "id": 3,
-          "subsystem": "Bus 2",
-          "description": "Second bus",
-          "status": "OK",
-      "classes": "btn-success",
-
-          "children": [],
-          "level": 2,
-          "selected": false
-        }
-      ],
-
-      "level": 1,
-      "selected": false,
-      "expanded": false
-    },
-    {
-      "id": 4,
-      "subsystem": "Kernel",
-      "description": "Linux kernel version",
-      "status": "OK",
-
-      "classes": "btn-success",
-      "children": [],
-      "level": 1,
-      "selected": false,
-      "expanded": false
-    }
-  ];
-
   $scope.my_tree = tree = {};
 
   $scope.tree_data = logTreeData;
@@ -259,10 +205,6 @@ app.controller('diagUiController', function($scope, $timeout) {
     sortable: false,
   };
 
-  $scope.btn_format = function(branch) {
-    return "<i>Hello</i>";
-  };
-
   $scope.col_defs = [
     {
       field: "status",
@@ -270,7 +212,8 @@ app.controller('diagUiController', function($scope, $timeout) {
       sortable: true,
       sortingType: "string",
       cellTemplate: "<button class='btn btn-xs {{row.branch.classes}}'>{{row.branch[col.field]}}</button>"
-
     }
   ];
+
+  $scope.tableLog = rawData;
 });
