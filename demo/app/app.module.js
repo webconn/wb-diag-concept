@@ -216,4 +216,65 @@ app.controller('diagUiController', function($scope, $timeout) {
   ];
 
   $scope.tableLog = rawData;
+
+  // log filter
+  $('#log-filter').tagsinput({
+    tagClass: function(item) {
+      switch (item.type) {
+        case 'text': return 'label label-primary';
+        case 'status': return 'label label-warning';
+        case 'subsystem': return 'label label-success';
+        default: return 'label label-default';
+      }
+    },
+    itemText: function(item) {
+      console.log(item);
+      return item.type + ':' + item.value;
+    },
+    // itemValue: 'value'
+  });
+
+  $('#log-filter').on('beforeItemAdd', function(event) {
+    // if ('type' in event) {
+      // return;
+    // }
+
+    // process event to be an object
+    var spl = event.item.split(':');
+    // event.cancel = true;
+    console.log('importing', spl);
+
+    if (spl.length == 0) {
+      event.item = {
+        type: 'text',
+        value: event.item
+      };
+    } else {
+      var type = spl[0];
+      if (type === "text" || type === "txt") {
+        event.item = {
+          type: 'text',
+          value: spl[1]
+        };
+      } else if (type === "st" || type === "status") {
+        event.item = {
+          type: 'status',
+          value: spl[1]
+        };
+      } else if (type === "ss") {
+        event.item = {
+          type: 'subsystem',
+          value: spl[1]
+        };
+      } else {
+        // unknown
+        console.log('unknown expression', spl);
+        return;
+      }
+    }
+
+    console.log('adding', event.item);
+    // $('#log-filter').tagsinput('add', event.item);
+  });
+
 });
