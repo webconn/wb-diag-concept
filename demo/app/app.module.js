@@ -3,19 +3,215 @@ var app = angular.module('diagUiDemoApp', ['treeGrid']);
 app.controller('diagUiController', function($scope, $timeout) {
   var tree;
 
+  var rawData = [
+    {
+      "path": "/daemons/wb-mqtt-serial/status",
+      "status": "ok",
+      "message": "daemon is working (pid 3458)",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/daemons/wb-rules/status",
+      "status": "ok",
+      "message": "daemon is working (pid 3571)",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus1/device1/rate",
+      "status": "ok",
+      "message": "actual 38 Hz, required 40 Hz",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus1/device1/status",
+      "status": "ok",
+      "message": "device is online",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus1/device2/rate",
+      "status": "warn",
+      "message": "actual 32 Hz, required 40 Hz",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus1/device2/status",
+      "status": "ok",
+      "message": "device is online",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus1/device3/status",
+      "status": "error",
+      "message": "device is offline",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus2/device1/rate",
+      "status": "ok",
+      "message": "actual 40 Hz, required 40 Hz",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/wb-mqtt-serial/bus2/device1/status",
+      "status": "ok",
+      "message": "device is online",
+      "timestamp": 1599723978,
+    },
+    {
+      "path": "/rules/heater/status",
+      "status": "ok",
+      "message": "heater health is OK",
+      "timestamp": 1599723978,
+    }
+  ];
+
+  function makeTree(log) {
+    function makeEntry(level) {
+      return {
+        "props": {
+          "children": [],
+          "level": level,
+          "selected": false,
+          "expanded": false
+        }
+      };
+    }
+
+    function getCategory_r(path, level, subtree) {
+      var cur_entry = path[0];
+
+      if (path.length == 1) {
+        if (!(cur_entry in subtree)) {
+          subtree[cur_entry] = makeEntry(level);
+        }
+        
+        return subtree[cur_entry];
+      } else {
+        if (!(cur_entry in subtree)) {
+          subtree[cur_entry] = makeEntry(level);
+        }
+        
+        return getCategory_r(path.slice(1), level + 1, subtree[cur_entry]);
+      }
+    }
+
+    function getOrCreateCategory(path, subtree) {
+      var spl = path.split("/").slice(1);
+      
+      return getCategory_r(spl, 1, subtree);
+    }
+
+    // form a tree
+    var tree = {};
+
+    log.forEach(function(entry) {
+      var cat = getOrCreateCategory(entry.path, tree);
+      console.log("cat for", entry.path, cat);
+
+      for (key in entry) {
+        cat.props[key] = entry[key];
+      }
+    });
+
+    // format tree for view
+    function fmtTree_r(tree) {
+      var subtree = [];
+
+      for (key in tree) {
+        if (key !== "props") {
+          var obj = tree[key].props;
+          obj.subsystem = key;
+          obj.children = fmtTree_r(tree[key]);
+
+          subtree.push(obj);
+        }
+      }
+
+      return subtree;
+    }
+
+    var fmt_tree = fmtTree_r(tree);
+
+    function fillClasses(st) {
+      if (st === "ok") {
+        return "btn-success";
+      } else if (st === "warn" || st === "mixed") {
+        return "btn-warning";
+      } else if (st === "error") {
+        return "btn-danger";
+      } else {
+        return "btn-default";
+      }
+    }
+
+    function setStatus(old_st, new_st) {
+      if (new_st === "error") {
+        if (old_st === "error" || old_st === "unknown") {
+          return "error";
+        } else {
+          return "mixed";
+        }
+      } else if (new_st === "warn") {
+        if (old_st === "warn" || old_st === "unknown") {
+          return "warn";
+        } else {
+          return "mixed";
+        }
+      } else if (new_st === "ok") {
+        if (old_st === "ok" || old_st === "unknown") {
+          return "ok";
+        } else {
+          return "mixed";
+        }
+      } else if (old_st === "mixed" || new_st == "mixed") {
+        return "mixed";
+      } else {
+        return "unknown";
+      }
+    }
+    
+    // fill status messages for categories
+    function fillStatus_r(fmt_tree) {
+      var cum_status = "unknown";
+
+      fmt_tree.forEach(function(entry) {
+        if (!("status" in entry)) {
+          entry["status"] = fillStatus_r(entry.children);
+        }
+
+        entry["classes"] = fillClasses(entry["status"]);
+        cum_status = setStatus(cum_status, entry["status"]);
+      });
+
+      return cum_status;
+    }
+
+    fillStatus_r(fmt_tree);
+
+    return fmt_tree;
+  }
+
+  var logTreeData = makeTree(rawData);
+
+
+
   var treeData = [
     {
       "id": 1,
       "subsystem": "Serial driver",
       "description": "Serial port driver",
-      "status": "OK",
+      "status": "WARN",
+      "classes": "btn-warning",
 
       "children": [
         {
           "id": 2,
           "subsystem": "Bus 1",
           "description": "First bus",
-          "status": "OK",
+          "status": "WARN",
+          
+      "classes": "btn-warning",
 
           "children": [],
           "level": 2,
@@ -26,6 +222,7 @@ app.controller('diagUiController', function($scope, $timeout) {
           "subsystem": "Bus 2",
           "description": "Second bus",
           "status": "OK",
+      "classes": "btn-success",
 
           "children": [],
           "level": 2,
@@ -43,6 +240,7 @@ app.controller('diagUiController', function($scope, $timeout) {
       "description": "Linux kernel version",
       "status": "OK",
 
+      "classes": "btn-success",
       "children": [],
       "level": 1,
       "selected": false,
@@ -50,216 +248,29 @@ app.controller('diagUiController', function($scope, $timeout) {
     }
   ];
 
-  // ------------------------------------------------------------
-  // TEST
-        var rawTreeData = [
-            {
-                "DemographicId": 1,
-                "ParentId": null,
-                "Name": "United States of America",
-                "Description": "United States of America",
-                "Area": 9826675,
-                "Population": 918212000,
-                "TimeZone": "UTC -5 to -10"
-            },
-            {
-                "DemographicId": 2,
-                "ParentId": 1,
-                "Name": "California",
-                "Description": "The Tech State",
-                "Area": 423970,
-                "Population": 38340000,
-                "TimeZone": "Pacific Time"
-            },
-            {
-                "DemographicId": 3,
-                "ParentId": 2,
-                "Name": "San Francisco",
-                "Description": "The happening city",
-                "Area": 231,
-                "Population": 837442,
-                "TimeZone": "PST"
-            },
-            {
-                "DemographicId": 4,
-                "ParentId": 2,
-                "Name": "Los Angeles",
-                "Description": "Disco city",
-                "Area": 503,
-                "Population": 3904657,
-                "TimeZone": "PST"
-            },
-            {
-                "DemographicId": 5,
-                "ParentId": 1,
-                "Name": "Illinois",
-                "Description": "Not so cool",
-                "Area": 57914,
-                "Population": 12882135,
-                "TimeZone": "Central Time Zone"
-            },
-            {
-                "DemographicId": 6,
-                "ParentId": 5,
-                "Name": "Chicago",
-                "Description": "Financial City",
-                "Area": 234,
-                "Population": 2695598,
-                "TimeZone": "CST"
-            },
-            {
-                "DemographicId": 7,
-                "ParentId": 1,
-                "Name": "Texas",
-                "Description": "Rances, Oil & Gas",
-                "Area": 268581,
-                "Population": 26448193,
-                "TimeZone": "Mountain"
-            },
-            {
-                "DemographicId": 8,
-                "ParentId": 1,
-                "Name": "New York",
-                "Description": "The largest diverse city",
-                "Area": 141300,
-                "Population": 19651127,
-                "TimeZone": "Eastern Time Zone"
-            },
-            {
-                "DemographicId": 14,
-                "ParentId": 8,
-                "Name": "Manhattan",
-                "Description": "Time Square is the place",
-                "Area": 269.403,
-                "Population": 0,
-                "TimeZone": "EST"
-            },
-            {
-                "DemographicId": 15,
-                "ParentId": 14,
-                "Name": "Manhattan City",
-                "Description": "Manhattan island",
-                "Area": 33.77,
-                "Population": 0,
-                "TimeZone": "EST"
-            },
-            {
-                "DemographicId": 16,
-                "ParentId": 14,
-                "Name": "Time Square",
-                "Description": "Time Square for new year",
-                "Area": 269.40,
-                "Population": 0,
-                "TimeZone": "EST"
-            },
-            {
-                "DemographicId": 17,
-                "ParentId": 8,
-                "Name": "Niagra water fall",
-                "Description": "Close to Canada",
-                "Area": 65.7,
-                "Population": 0,
-                "TimeZone": "EST"
-            },
-            {
-                "DemographicId": 18,
-                "ParentId": 8,
-                "Name": "Long Island",
-                "Description": "Harbour to Atlantic",
-                "Area": 362.9,
-                "Population": 0,
-                "TimeZone": "EST"
-            },
-            {
-                "DemographicId": 51,
-                "ParentId": 1,
-                "Name": "All_Other",
-                "Description": "All_Other demographics",
-                "Area": 0,
-                "Population": 0,
-                "TimeZone": 0
-            },
-            {
-                "DemographicId": 201,
-                "ParentId": null,
-                "Name": "India",
-                "Description": "Hydrabad tech city",
-                "Area": 5566.9,
-                "Population": 718212000,
-                "TimeZone": "IST"
-            },
-            {
-                "DemographicId": 301,
-                "ParentId": null,
-                "Name": "Bangladesh",
-                "Description": "Country of love",
-                "Area": 5566.78,
-                "Population": 718212004,
-                "TimeZone": "BST"
-            }
-        ];
-        function getTree(data, primaryIdName, parentIdName) {
-            if (!data || data.length == 0 || !primaryIdName || !parentIdName)
-                return [];
-
-            var tree = [],
-                rootIds = [],
-                item = data[0],
-                primaryKey = item[primaryIdName],
-                treeObjs = {},
-                parentId,
-                parent,
-                len = data.length,
-                i = 0;
-
-            while (i < len) {
-                item = data[i++];
-                primaryKey = item[primaryIdName];
-                treeObjs[primaryKey] = item;
-                parentId = item[parentIdName];
-
-                if (parentId) {
-                    parent = treeObjs[parentId];
-
-                    if (parent.children) {
-                        parent.children.push(item);
-                    } else {
-                        parent.children = [item];
-                    }
-                } else {
-                    rootIds.push(primaryKey);
-                }
-            }
-
-            for (var i = 0; i < rootIds.length; i++) {
-                tree.push(treeObjs[rootIds[i]]);
-            }
-            ;
-
-            console.log(tree);
-            return tree;
-        }
-
-
-        var myTreeData = getTree(rawTreeData, 'DemographicId', 'ParentId');
-  // ------------------------------------------------------------
-
   $scope.my_tree = tree = {};
 
-  $scope.tree_data = treeData;
+  $scope.tree_data = logTreeData;
+
+  $scope.expanding_property = {
+    field: "subsystem",
+    displayName: "Subsystem",
+    filterable: true,
+    sortable: false,
+  };
+
+  $scope.btn_format = function(branch) {
+    return "<i>Hello</i>";
+  };
 
   $scope.col_defs = [
     {
-      "field": "subsystem",
-      "displayName": "Subsystem",
-      "sortable": false,
-      "sortingType": "string"
-    },
-    {
-      "field": "status",
-      "displayName": "Status",
-      "sortable": true,
-      "sortingType": "string"
+      field: "status",
+      displayName: "Status",
+      sortable: true,
+      sortingType: "string",
+      cellTemplate: "<button class='btn btn-xs {{row.branch.classes}}'>{{row.branch[col.field]}}</button>"
+
     }
   ];
 });
