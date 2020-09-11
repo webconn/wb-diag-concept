@@ -1,4 +1,4 @@
-var app = angular.module('diagUiDemoApp', ['treeGrid']);
+var app = angular.module('diagUiDemoApp', ['treeGrid', 'ngTagsInput']);
 
 var rawData = [
   {
@@ -67,39 +67,41 @@ app.controller('diagUiController', function($scope, $timeout) {
   var tree;
 
   function makeTree(log) {
-    function makeEntry(level) {
+    function makeEntry(level, path) {
       return {
         "props": {
           "children": [],
           "level": level,
           "selected": false,
-          "expanded": false
+          "expanded": false,
+          "fullpath": path
         }
       };
     }
 
-    function getCategory_r(path, level, subtree) {
+    function getCategory_r(path, level, subtree, parent_path) {
       var cur_entry = path[0];
+      var full_path = parent_path + "/" + cur_entry;
 
       if (path.length == 1) {
         if (!(cur_entry in subtree)) {
-          subtree[cur_entry] = makeEntry(level);
+          subtree[cur_entry] = makeEntry(level, full_path);
         }
-        
+
         return subtree[cur_entry];
       } else {
         if (!(cur_entry in subtree)) {
-          subtree[cur_entry] = makeEntry(level);
+          subtree[cur_entry] = makeEntry(level, full_path);
         }
-        
-        return getCategory_r(path.slice(1), level + 1, subtree[cur_entry]);
+
+        return getCategory_r(path.slice(1), level + 1, subtree[cur_entry], full_path);
       }
     }
 
     function getOrCreateCategory(path, subtree) {
       var spl = path.split("/").slice(1);
-      
-      return getCategory_r(spl, 1, subtree);
+
+      return getCategory_r(spl, 1, subtree, "");
     }
 
     // form a tree
@@ -170,7 +172,7 @@ app.controller('diagUiController', function($scope, $timeout) {
         return "unknown";
       }
     }
-    
+
     // fill status messages for categories
     function fillStatus_r(fmt_tree) {
       var cum_status = "unknown";
@@ -202,7 +204,21 @@ app.controller('diagUiController', function($scope, $timeout) {
     field: "subsystem",
     displayName: "Subsystem",
     filterable: true,
-    sortable: false,
+    sortable: true,
+
+    // cellTemplate: "<a ng-click='$scope.propclick(row.branch)'>{{row.branch.subsystem}}</a>",
+  };
+
+  $scope.propclick = function(branch) {
+        $scope.filterTags = [
+          {
+            'text': "ss:" + branch.fullpath
+          }
+        ];
+      };
+
+  $scope.listButtonClick = function(branch) {
+    console.log("Clicked", branch);
   };
 
   $scope.col_defs = [
@@ -211,70 +227,35 @@ app.controller('diagUiController', function($scope, $timeout) {
       displayName: "Status",
       sortable: true,
       sortingType: "string",
-      cellTemplate: "<button class='btn btn-xs {{row.branch.classes}}'>{{row.branch[col.field]}}</button>"
+      cellTemplate: "<button class='btn btn-xs {{row.branch.classes}}' ng-click='cellTemplateScope.click(row.branch)'>{{row.branch[col.field]}}</button>",
+      cellTemplateScope: {
+        click: function(branch) {
+          console.log("Clicked", branch);
+
+          // FIXME: tags must not repeat
+          $scope.filterTags = [
+            {
+              'text': "ss:" + branch.fullpath,
+            },
+            {
+              'text': "type:" + branch.status,
+            }
+          ];
+        }
+      }
     }
   ];
 
   $scope.tableLog = rawData;
 
-  // log filter
-  $('#log-filter').tagsinput({
-    tagClass: function(item) {
-      switch (item.type) {
+  $scope.filterTags = [];
+
+  $scope.getTagClass = function($tag) {
+      switch ($tag.type) {
         case 'text': return 'label label-primary';
         case 'status': return 'label label-warning';
         case 'subsystem': return 'label label-success';
-        default: return 'label label-default';
+        default: return 'label-default';
       }
-    },
-    itemText: function(item) {
-      console.log(item);
-      return item.type + ':' + item.value;
-    },
-    // itemValue: 'value'
-  });
-
-  $('#log-filter').on('beforeItemAdd', function(event) {
-    // if ('type' in event) {
-      // return;
-    // }
-
-    // process event to be an object
-    var spl = event.item.split(':');
-    // event.cancel = true;
-    console.log('importing', spl);
-
-    if (spl.length == 0) {
-      event.item = {
-        type: 'text',
-        value: event.item
-      };
-    } else {
-      var type = spl[0];
-      if (type === "text" || type === "txt") {
-        event.item = {
-          type: 'text',
-          value: spl[1]
-        };
-      } else if (type === "st" || type === "status") {
-        event.item = {
-          type: 'status',
-          value: spl[1]
-        };
-      } else if (type === "ss") {
-        event.item = {
-          type: 'subsystem',
-          value: spl[1]
-        };
-      } else {
-        // unknown
-        console.log('unknown expression', spl);
-        return;
-      }
-    }
-
-    console.log('adding', event.item);
-    // $('#log-filter').tagsinput('add', event.item);
-  });
-
+  }
 });
